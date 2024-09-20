@@ -1,0 +1,54 @@
+.chord-sheet .chord:not(:last-child) {
+  padding-right: 10px;
+}
+
+.chord-sheet .column {
+  text-align: left;
+}
+
+.chord-sheet .paragraph {
+  margin-bottom: 1em;
+  break-inside: avoid-column;
+}
+
+.chord-sheet .row {
+  display: flex;
+}
+
+.chord-sheet .chord:after {
+  content: "\200b";
+}
+
+.chord-sheet .lyrics:after {
+  content: "\200b";
+}
+
+.hide-chords .chord-sheet .chord {
+  display: none;
+}
+
+.chord-sheet .chord {
+  font-weight: bold;
+}
+
+.chord-sheet .comment {
+  font-weight: bold;
+}
+
+.multi-column .chord-sheet {
+  -moz-column-count: 2;
+  -moz-column-gap: 20px;
+  -webkit-column-count: 2;
+  -webkit-column-gap: 20px;
+  column-count: 2;
+  column-gap: 20px;
+  width: 100%;
+}
+
+@media only screen and (max-width: 750px) {
+  .multi-column .chord-sheet {
+    -moz-column-count: 1;
+    -webkit-column-count: 1;
+    column-count: 1;
+  }
+}
