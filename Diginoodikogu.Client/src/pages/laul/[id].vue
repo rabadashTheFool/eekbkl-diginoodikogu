@@ -24,9 +24,10 @@
           </SecondaryButton>
         </div>
         <div v-if="variatsioonid && variatsioonid.length" class="mb-4">
-          <select class="mt-1 w-fit block pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md dark:text-white dark:bg-gray-900 dark:border-gray-600 border-gray-300 text-gray-900 focus:ring-indigo-500 focus:border-indigo-500" 
+          <select
+            class="mt-1 w-fit block pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md dark:text-white dark:bg-gray-900 dark:border-gray-600 border-gray-300 text-gray-900 focus:ring-indigo-500 focus:border-indigo-500"
             @change="selectedVarChanged" v-model="selectedVar">
-            <option value="">Vali variatsioon</option>
+            <option :value="undefined">Näita algset</option>
             <option v-for="v in variatsioonid" :key="v!.id" :value="v">{{ v!.nimetus }}</option>
           </select>
         </div>
@@ -42,7 +43,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, computed, onUpdated } from 'vue'
+import { ref, onMounted, computed, onUpdated, watch } from 'vue'
 import { useHead } from "@unhead/vue"
 import { ApiResult } from "@servicestack/client"
 import { useClient, useAuth } from "@servicestack/vue"
@@ -50,13 +51,22 @@ import { QueryLaulud, QueryResponse, QueryVariatsioonid, Variatsioon } from "@/d
 import { ChordProParser, Key, HtmlDivFormatter } from 'chordsheetjs'
 import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay'
 import { Laul } from '@/dtos'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { MAJOR_KEYS, MINOR_KEYS, TRANSPOSE_KEY_VALUE } from "@/keys"
 import { ExtendedTransposeCalculator } from '@/ExtendedTransposeCalculator'
 import type { ETCDirections } from '@/ETC'
 
 const route = useRoute()
+const router = useRouter()
 const id = computed(() => (route.params as any)?.id)
+
+// const darkMode = computed(() => localStorage.getItem('color-scheme') == 'dark')
+// watch(darkMode, async () => {
+//   osmdOptions.darkMode = darkMode.value
+//   osmd?.setOptions(osmdOptions)
+//   osmd?.updateGraphic()
+//   osmd?.render()
+// })
 
 const client = useClient()
 const api = ref(new ApiResult())
@@ -96,22 +106,25 @@ const formatter = new HtmlDivFormatter({
 })
 
 const chordProParser = new ChordProParser()
-const showMusicXml = ref(false)
+const showMusicXml = ref(true)
 
 const chordProSong = ref()
 const musicXml = ref()
 const activeOrigKey = ref()
 
 const selectedVarChanged = () => {
+  router.replace({ path: route.path, query: { varId: selectedVar.value?.id } })
   if (selectedVar.value) {
     musicXml.value = selectedVar.value.musicXml
     chordProSong.value = selectedVar.value.chordPro ? chordProParser.parse(selectedVar.value.chordPro) : null
     activeOrigKey.value = selectedVar.value.helistik
   } else {
+    route.query.varId = null
     musicXml.value = laul.value!.musicXml
     chordProSong.value = laul.value!.chordPro ? chordProParser.parse(laul.value!.chordPro) : null
     activeOrigKey.value = laul.value!.helistik
   }
+  restoreOrigKey()
 }
 
 const currentKey = ref<string>()
@@ -119,7 +132,7 @@ const currentKey = ref<string>()
 const laul = ref<Laul>()
 const variatsioonid = ref<(Variatsioon | null)[]>()
 
-const selectedVar = ref<Variatsioon | null>()
+const selectedVar = ref<Variatsioon | undefined>(undefined)
 
 const chordProHtml = computed(() => {
   if (!chordProSong.value) {
@@ -137,16 +150,22 @@ const refresh = async () => {
   api.value = await client.api(new QueryLaulud({ id: id.value }))
   if (api.value.succeeded) {
     laul.value = (api.value.response as QueryResponse<Laul>).results[0]
-    currentKey.value = laul.value.helistik
     useHead({ title: laul.value.nimi })
-    if (laul.value.chordPro) {
-      chordProSong.value = chordProParser.parse(laul.value.chordPro)
-    }
-    showMusicXml.value = laul.value.musicXml != null
-    musicXml.value = laul.value.musicXml
-    activeOrigKey.value = laul.value.helistik
     await queryVariatsioonid()
+    selectedVar.value = variatsioonid.value?.find(v => v!.id == route.query.varId) || undefined
+    selectedVarChanged()
+    setCurrentKey()
   }
+}
+
+const setCurrentKey = () => {
+  if (route.query.key) {
+    currentKey.value = route.query.key
+  }
+  else {
+    currentKey.value = activeOrigKey.value
+  }
+  setKey()
 }
 
 const queryVariatsioonid = async () => {
@@ -185,7 +204,7 @@ onUpdated(async () => {
 })
 
 const restoreOrigKey = () => {
-  currentKey.value = laul.value?.helistik
+  currentKey.value = activeOrigKey.value
   setKey()
 }
 
@@ -197,18 +216,22 @@ const selectableKeys = computed<string[]>(() => {
 })
 
 const setKey = async () => {
+  const routeKey = currentKey.value !== activeOrigKey.value ? currentKey.value : undefined
+  router.replace({ path: route.path, query: { varId: selectedVar.value?.id, key: routeKey } })
+  
   if (chordProSong.value) {
-    const transposeDistance = chordProSong.value.getTransposeDistance(currentKey.value)
-    let transposedSong = chordProSong.value.transpose(transposeDistance, {
-      normalizeChordSuffix: true,
-    })
-    if (transposedSong.key != currentKey.value) {
-      transposedSong = transposedSong.transposeUp().transposeDown()
-    }
-    if (transposedSong.key != currentKey.value) {
-      transposedSong = transposedSong.transposeDown().transposeUp()
-    }
-    chordProSong.value = transposedSong
+    chordProSong.value = chordProSong.value.changeKey(currentKey.value)
+    // const transposeDistance = chordProSong.value.getTransposeDistance(currentKey.value)
+    // let transposedSong = chordProSong.value.transpose(transposeDistance, {
+    //   normalizeChordSuffix: true,
+    // })
+    // if (transposedSong.key != currentKey.value) {
+    //   transposedSong = transposedSong.transposeUp().transposeDown()
+    // }
+    // if (transposedSong.key != currentKey.value) {
+    //   transposedSong = transposedSong.transposeDown().transposeUp()
+    // }
+    // chordProSong.value = transposedSong
   }
 }
 

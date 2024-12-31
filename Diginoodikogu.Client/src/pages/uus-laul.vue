@@ -104,7 +104,7 @@ import { useClient } from "@servicestack/vue"
 import { MAJOR_KEYS, MINOR_KEYS } from "@/keys"
 import { CreateLaul, QueryKogumikud, CreateKogumik } from '@/dtos'
 import { computed, ref, onMounted } from 'vue'
-import { router } from "@/main"
+import { useRouter } from "vue-router"
 
 const visibleFields = "nimi,sonad,viis,kogumik,helistik,chordPro,musicXml"
 
@@ -118,6 +118,8 @@ const onChordProFileChange = async (e: Event) => {
     request.value.chordPro = undefined
   }
 }
+
+const router = useRouter()
 
 const onMusicXmlFileChange = async (e: Event) => {
   const file = (e.target as HTMLInputElement).files?.item(0)

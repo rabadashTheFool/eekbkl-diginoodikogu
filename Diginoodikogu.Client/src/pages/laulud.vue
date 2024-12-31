@@ -19,9 +19,9 @@ import { ref, onMounted, computed } from 'vue'
 import { ApiResult } from "@servicestack/client"
 import { useClient, useAuth } from "@servicestack/vue"
 import { Laul, QueryLaulud, QueryResponse } from "@/dtos"
-import { router } from '@/main';
+import { useRouter } from 'vue-router';
 
-
+const router = useRouter()
 const { hasRole } = useAuth()
 const canAddNew = computed(() => hasRole('Sisestaja'))
 

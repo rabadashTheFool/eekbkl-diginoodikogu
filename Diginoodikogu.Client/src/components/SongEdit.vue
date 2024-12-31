@@ -102,8 +102,9 @@ import { useClient } from "@servicestack/vue"
 import { MAJOR_KEYS, MINOR_KEYS } from "@/keys"
 import { QueryKogumikud, CreateKogumik, UpdateLaul, Laul, DeleteLaul } from '@/dtos'
 import { computed, ref, onMounted } from 'vue'
-import { ApiResult } from "@servicestack/client";
-import { router } from "@/main";
+import { useRouter } from "vue-router";
+
+const router = useRouter()
 
 const props = defineProps<{
   laul: Laul
