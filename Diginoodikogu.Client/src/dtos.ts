@@ -53,18 +53,6 @@ export interface IDelete
 {
 }
 
-export interface ICreateDb<Table>
-{
-}
-
-export interface IPatchDb<Table>
-{
-}
-
-export interface IDeleteDb<Table>
-{
-}
-
 // @DataContract
 export class QueryBase
 {
@@ -200,7 +188,7 @@ export class Kogumik
 /** @description Variatsioonid */
 export class Variatsioon extends AuditBase
 {
-    public id: number;
+    public id: string;
     // @Required()
     public nimetus: string;
     public musicXml?: string;
@@ -236,13 +224,12 @@ export class Variatsioon extends AuditBase
 /** @description Laulud */
 export class Laul extends AuditBase
 {
-    public id: number;
+    public id: string;
     // @Required()
     public nimi: string;
     public sonad?: string;
     public viis?: string;
-    // @References(typeof(Kogumik))
-    public kogumik?: string;
+    public kogumikud: string[];
     public musicXml?: string;
     public chordPro?: string;
     // @Required()
@@ -279,7 +266,7 @@ export class Laul extends AuditBase
 // @ValidateRequest(Validator="HasRole(`Kasutaja`)")
 export class QueryLaulud extends QueryDb<Laul> implements IReturn<QueryResponse<Laul>>
 {
-    public id?: number;
+    public id?: string;
 
     public constructor(init?: Partial<QueryLaulud>) { super(init); (Object as any).assign(this, init); }
     public getTypeName() { return 'QueryLaulud'; }
@@ -296,8 +283,7 @@ export class CreateLaul implements IReturn<IdResponse>, ICreateDb<Laul>
     public nimi: string;
     public sonad?: string;
     public viis?: string;
-    // @References(typeof(Kogumik))
-    public kogumik?: string;
+    public kogumikud: string[];
     public musicXml?: string;
     public chordPro?: string;
     public helistik: string;
@@ -314,13 +300,12 @@ export class CreateLaul implements IReturn<IdResponse>, ICreateDb<Laul>
 export class UpdateLaul implements IReturn<IdResponse>, IPatchDb<Laul>
 {
     // @Required()
-    public id: number;
+    public id: string;
     // @Required()
     public nimi: string;
     public sonad?: string;
     public viis?: string;
-    // @References(typeof(Kogumik))
-    public kogumik?: string;
+    public kogumikud: string[];
     public musicXml?: string;
     public chordPro?: string;
      // @Required()
@@ -337,7 +322,7 @@ export class UpdateLaul implements IReturn<IdResponse>, IPatchDb<Laul>
 // @ValidateRequest(Validator="HasRole(`Sisestaja`)")
 export class DeleteLaul implements IReturnVoid, IDeleteDb<Laul>
 {
-    public id: number;
+    public id: string;
 
     public constructor(init?: Partial<DeleteLaul>) { (Object as any).assign(this, init); }
     public getTypeName() { return 'DeleteLaul'; }
@@ -351,10 +336,10 @@ export class DeleteLaul implements IReturnVoid, IDeleteDb<Laul>
 // @ValidateRequest(Validator="HasRole(`Kasutaja`)")
 export class QueryVariatsioonid extends QueryDb<Laul> implements IReturn<QueryResponse<Variatsioon>>
 {
-    public id?: number;
+    public id?: string;
     // @Required()
     // @ForeignKey(typeof(Laul))
-    public laulId: number;
+    public laulId: string;
 
     public constructor(init?: Partial<QueryVariatsioonid>) { super(init); (Object as any).assign(this, init); }
     public getTypeName() { return 'QueryVariatsioonid'; }
@@ -371,7 +356,7 @@ export class CreateVariatsioon implements IReturn<IdResponse>, ICreateDb<Variats
     public nimetus: string;
     // @Required()
     // @References(typeof(Laul))
-    public laulId: number;
+    public laulId: string;
     public musicXml?: string;
     public chordPro?: string;
     // @Required()
@@ -389,12 +374,12 @@ export class CreateVariatsioon implements IReturn<IdResponse>, ICreateDb<Variats
 export class UpdateVariatsioon implements IReturn<IdResponse>, IPatchDb<Variatsioon>
 {
     // @Required()
-    public id: number;
+    public id: string;
     // @Required()
     public nimetus: string;
     // @Required()
     // @References(typeof(Laul))
-    public laulId: number;
+    public laulId: string;
     public musicXml?: string;
     public chordPro?: string;
     // @Required()
@@ -411,7 +396,7 @@ export class UpdateVariatsioon implements IReturn<IdResponse>, IPatchDb<Variatsi
 // @ValidateRequest(Validator="HasRole(`Sisestaja`)")
 export class DeleteVariatsioon implements IReturnVoid, IDeleteDb<Variatsioon>
 {
-    public id: number;
+    public id: string;
 
     public constructor(init?: Partial<DeleteVariatsioon>) { (Object as any).assign(this, init); }
     public getTypeName() { return 'DeleteVariatsioon'; }

@@ -8,15 +8,13 @@ namespace Diginoodikogu.ServiceModel;
 [Notes("Captures Song information and all related variations of the song")]
 public class Laul : AuditBase
 {
-    [AutoIncrement]
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public string Nimi { get; set; } = default!;
     public string? Sonad { get; set; }
     public string? Viis { get; set; }
     public string? MusicXml { get; set; }
     public string? ChordPro { get; set; }
-    [References(typeof(Kogumik))]
-    public string? Kogumik { get; set; }
+    public List<string> Kogumikud { get; set; } = default!;
     public string Helistik { get; set; } = default!;
     [Reference]
     public List<Variatsioon> Variatsioonid { get; set; } = default!;
@@ -28,7 +26,7 @@ public class Laul : AuditBase
 [AutoApply(Behavior.AuditQuery)]
 public class QueryLaulud : QueryDb<Laul>
 {
-    public int? Id { get; set; }
+    public Guid? Id { get; set; }
 }
 
 [Tag("laulud"), Description("Lisa uus laul")]
@@ -37,12 +35,13 @@ public class QueryLaulud : QueryDb<Laul>
 [AutoApply(Behavior.AuditCreate)]
 public class CreateLaul : ICreateDb<Laul>, IReturn<IdResponse>
 {
+    public Guid Id { get; set; } = Guid.NewGuid();
     [Description("Laulu nimi"), ValidateNotEmpty]
     public required string Nimi { get; set; }
     public string? Sonad { get; set; }
     public string? Viis { get; set; }
-    [References(typeof(Kogumik))]
-    public string? Kogumik { get; set; }
+    [Input(Type = "tag"), FieldCss(Field = "col-span-12")]
+    public List<string> Kogumikud { get; set; } = default!;
     public string? MusicXml { get; set; }
     [Input(Type = "textarea")]
     public string? ChordPro { get; set; }
@@ -55,15 +54,15 @@ public class CreateLaul : ICreateDb<Laul>, IReturn<IdResponse>
 [AutoApply(Behavior.AuditModify)]
 public class UpdateLaul : IPatchDb<Laul>, IReturn<IdResponse>
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     [Description("Laulu nimi"), ValidateNotEmpty]
     public required string Nimi { get; set; }
     public string? Sonad { get; set; }
     public string? Viis { get; set; }
     public string? MusicXml { get; set; }
     public string? ChordPro { get; set; }
-    [References(typeof(Kogumik))]
-    public string? Kogumik { get; set; }
+    [Input(Type = "tag"), FieldCss(Field = "col-span-12")]
+    public List<string> Kogumikud { get; set; } = default!;
     public string Helistik { get; set; } = default!;
 }
 
@@ -74,19 +73,18 @@ public class UpdateLaul : IPatchDb<Laul>, IReturn<IdResponse>
 [AutoApply(Behavior.AuditSoftDelete)]
 public class DeleteLaul : IDeleteDb<Laul>, IReturnVoid
 {
-    public int? Id { get; set; }
+    public Guid Id { get; set; }
 }
 
 [Description("Laulu variandi detailid")]
 public class Variatsioon : AuditBase
 {
-    [AutoIncrement]
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public string Nimetus { get; set; } = default!;
     public string? MusicXml { get; set; }
     public string? ChordPro { get; set; }
     [ForeignKey(typeof(Laul))]
-    public int LaulId { get; set; }
+    public Guid LaulId { get; set; }
     public string Helistik { get; set; } = default!;
 }
 
@@ -97,8 +95,8 @@ public class Variatsioon : AuditBase
 [AutoApply(Behavior.AuditQuery)]
 public class QueryVariatsioonid : QueryDb<Variatsioon>
 {
-    public int? Id { get; set; }
-    public int? LaulId { get; set; }
+    public Guid? Id { get; set; }
+    public Guid? LaulId { get; set; }
 
 }
 
@@ -108,12 +106,13 @@ public class QueryVariatsioonid : QueryDb<Variatsioon>
 [AutoApply(Behavior.AuditCreate)]
 public class CreateVariatsioon : ICreateDb<Variatsioon>, IReturn<IdResponse>
 {
+    public Guid Id { get; set; } = Guid.NewGuid();
     [ValidateNotEmpty]
     public string Nimetus { get; set; } = default!;
     public string? MusicXml { get; set; }
     public string? ChordPro { get; set; }
     [ForeignKey(typeof(Laul))]
-    public int LaulId { get; set; }
+    public Guid LaulId { get; set; }
     public string Helistik { get; set; } = default!;
 }
 
@@ -123,12 +122,13 @@ public class CreateVariatsioon : ICreateDb<Variatsioon>, IReturn<IdResponse>
 [AutoApply(Behavior.AuditCreate)]
 public class UpdateVariatsioon : IUpdateDb<Variatsioon>, IReturn<IdResponse>
 {
+    public Guid Id { get; set; }
     [ValidateNotEmpty]
     public string Nimetus { get; set; } = default!;
     public string? MusicXml { get; set; }
     public string? ChordPro { get; set; }
     [ForeignKey(typeof(Laul))]
-    public int LaulId { get; set; }
+    public Guid LaulId { get; set; }
     public string Helistik { get; set; } = default!;
 }
 
@@ -151,7 +151,7 @@ public class QueryKogumikud : QueryDb<Kogumik>
 public class CreateKogumik : ICreateDb<Kogumik>, IReturn<IdResponse>
 {
     [ValidateNotEmpty]
-    public string Nimi { get; set; } = default!;
+    public required string Nimi { get; set; }
 }
 
 [Tag("kogumik")]
@@ -159,5 +159,5 @@ public class CreateKogumik : ICreateDb<Kogumik>, IReturn<IdResponse>
 [ValidateHasRole(Roles.Admin)]
 public class DeleteKogumik : IDeleteDb<Kogumik>, IReturnVoid
 {
-    public string Nimi { get; set; } = default!;
+    public required string Nimi { get; set; }
 }

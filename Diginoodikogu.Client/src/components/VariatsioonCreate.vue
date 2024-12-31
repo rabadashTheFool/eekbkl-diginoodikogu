@@ -94,7 +94,7 @@ import { CreateVariatsioon } from '@/dtos'
 import { computed, ref } from 'vue'
 
 const props = defineProps<{
-  laulId: number
+  laulId: string
 }>()
 
 const emit = defineEmits<{

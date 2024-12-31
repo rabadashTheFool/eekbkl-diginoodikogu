@@ -16,13 +16,13 @@
                 <TextInput id="nimi" v-model="request.nimi" required placeholder="Laulu nimi" />
               </div>
               <div class="mb-4">
-                <TextInput id="sonad" v-model="request.sonad" placeholder="Laulu sõnade autor" />
+                <TextInput id="sonad" label="Sõnad" v-model="request.sonad" placeholder="Laulu sõnade autor" />
               </div>
               <div class="mb-4">
                 <TextInput id="viis" v-model="request.viis" placeholder="Laulu viisi autor" />
               </div>
               <div class="mb-4">
-                <TextInput id="kogumik" v-model="request.kogumik" placeholder="Kogumik" />
+                <TagInput id="kogumik" label="Kogumikud" v-model="request.kogumikud" />
               </div>
               <div class="mb-4">
                 <SelectInput label="Helistik" class="mb-2 w-fit" v-model="request.helistik" required
@@ -143,18 +143,26 @@ const selectableKeys = computed(() => {
 const request = ref(new CreateLaul())
 
 async function addNewLaul() {
-  if (request.value.kogumik && !kogumikud.value?.includes(request.value.kogumik)) {
-    const kogApi = await client.api(new CreateKogumik({ nimi: request.value.kogumik }))
-    if (!kogApi.succeeded) {
-      alert("uue kogumiku lisamine ebaõnnestus")
-      return;
-    }
-  }
+  const failed = await addMissingKogumikud()
+  if (failed) return
 
   const api = await client.api(request.value)
   if (api.succeeded) {
     router.push("/laul/" + api.response!.id)
   }
+}
+
+async function addMissingKogumikud() {
+  for (const kogumik of request.value.kogumikud) {
+    if (!kogumikud.value?.includes(kogumik)) {
+      const kogApi = await client.api(new CreateKogumik({ nimi: kogumik }))
+      if (!kogApi.succeeded) {
+        alert("uue kogumiku lisamine ebaõnnestus")
+        return true
+      }
+    }
+  }
+  return false
 }
 
 onMounted(async () => {
@@ -164,9 +172,9 @@ onMounted(async () => {
     : []
 })
 
-const filteredKogumikud = computed(() => {
-  return kogumikud.value?.filter(k => k.toLocaleLowerCase().includes(request.value.kogumik?.toLocaleLowerCase() || ''))
-})
+// const filteredKogumikud = computed(() => {
+//   return kogumikud.value?.filter(k => k.toLocaleLowerCase().includes(request.value.kogumik?.toLocaleLowerCase() || ''))
+// })
 
 const readUploadedFileAsText = (inputFile: File): Promise<string> => {
   const temporaryFileReader = new FileReader()

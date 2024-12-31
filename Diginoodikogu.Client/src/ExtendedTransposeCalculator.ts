@@ -137,7 +137,7 @@ export class ExtendedTransposeCalculator implements IExtendedTransposeCalculator
   }
 
   public transposeKey(keyInstruction: KeyInstruction, transpose: number): void {
-      transpose = Math.trunc(transpose);
+      transpose = Math.round(transpose);
       if (this.Options.TransposeByKeyRelation) {
           transpose = ETC.recoverTransposedKey(this.MainKey, transpose);
       }

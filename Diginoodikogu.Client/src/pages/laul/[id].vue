@@ -43,7 +43,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, computed, onUpdated, watch } from 'vue'
+import { ref, onMounted, computed, onUpdated, onBeforeUnmount } from 'vue'
 import { useHead } from "@unhead/vue"
 import { ApiResult } from "@servicestack/client"
 import { useClient, useAuth } from "@servicestack/vue"
@@ -59,14 +59,6 @@ import type { ETCDirections } from '@/ETC'
 const route = useRoute()
 const router = useRouter()
 const id = computed(() => (route.params as any)?.id)
-
-// const darkMode = computed(() => localStorage.getItem('color-scheme') == 'dark')
-// watch(darkMode, async () => {
-//   osmdOptions.darkMode = darkMode.value
-//   osmd?.setOptions(osmdOptions)
-//   osmd?.updateGraphic()
-//   osmd?.render()
-// })
 
 const client = useClient()
 const api = ref(new ApiResult())
@@ -100,10 +92,7 @@ const closeModal = () => {
   showEditVar.value = false
 }
 
-const formatter = new HtmlDivFormatter({
-  normalizeChords: true,
-  evaluate: true,
-})
+const formatter = new HtmlDivFormatter()
 
 const chordProParser = new ChordProParser()
 const showMusicXml = ref(true)
@@ -144,7 +133,42 @@ const chordProHtml = computed(() => {
 const osmdRef = ref()
 let osmd: OpenSheetMusicDisplay | null = null
 
-onMounted(async () => await refresh())
+let darkModeObserver: MutationObserver | null = null
+let darkMode = false
+
+const toggleOsmdDarkMode = () => {
+  osmdOptions.darkMode = darkMode
+  osmd?.setOptions(osmdOptions)
+  osmd?.updateGraphic()
+  osmd?.render()
+}
+
+const mutationCallback = (mutationsList: MutationRecord[]): void => {
+  for (const mutation of mutationsList) {
+    if (
+      mutation.type === "attributes" &&
+      mutation.attributeName === "class"
+    ) {
+      const currentDarkModeState = mutation.target.classList.contains('dark')
+      if (darkMode !== currentDarkModeState) {
+        darkMode = currentDarkModeState
+        toggleOsmdDarkMode()
+      }
+      break
+    }
+  }
+}
+
+onMounted(async () => {
+  darkMode = document.documentElement.classList.contains('dark')
+  darkModeObserver = new MutationObserver(mutationCallback)
+  darkModeObserver.observe(document.documentElement, {attributes: true})
+  await refresh()
+})
+
+onBeforeUnmount(() => {
+  darkModeObserver?.disconnect()
+})
 
 const refresh = async () => {
   api.value = await client.api(new QueryLaulud({ id: id.value }))
@@ -217,8 +241,9 @@ const selectableKeys = computed<string[]>(() => {
 
 const setKey = async () => {
   const routeKey = currentKey.value !== activeOrigKey.value ? currentKey.value : undefined
+  if (routeKey === route.query.key) return
   router.replace({ path: route.path, query: { varId: selectedVar.value?.id, key: routeKey } })
-  
+
   if (chordProSong.value) {
     chordProSong.value = chordProSong.value.changeKey(currentKey.value)
     // const transposeDistance = chordProSong.value.getTransposeDistance(currentKey.value)
@@ -240,6 +265,7 @@ const renderMusicXml = async () => {
     return
   }
   if (!osmd) {
+    osmdOptions.darkMode = darkMode
     osmd = new OpenSheetMusicDisplay(osmdRef.value, osmdOptions)
   }
   osmd.clear()

@@ -1,15 +1,11 @@
 <template>
-<div class="mt-8 mb-20 mx-auto max-w-fit">
+  <div class="mt-8 mb-20 mx-auto max-w-fit">
     <h1 class="mb-4 text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50 sm:text-4xl">Laulud</h1>
 
-    <Alert v-if='api.error' type="error">{{api.error.message}}</Alert>
+    <Alert v-if='api.error' type="error">{{ api.error.message }}</Alert>
     <div v-else-if="api.response">
       <PrimaryButton v-if="canAddNew" href="/uus-laul">Lisa uus laul</PrimaryButton>
-      <DataGrid 
-        :items="laulud" 
-        :selected-columns="['nimi','kogumik','sonad','viis']"
-        @rowSelected="rowSelected"
-        />
+      <DataGrid :items="laulud" :selected-columns="['nimi', 'kogumikud', 'sonad', 'viis']" @rowSelected="rowSelected" />
     </div>
     <Loading v-else class="w-fit mx-auto">Laen...</Loading>
   </div>

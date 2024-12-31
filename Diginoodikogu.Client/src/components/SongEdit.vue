@@ -20,7 +20,7 @@
               <TextInput id="viis" v-model="request.viis" placeholder="Laulu viisi autor" />
             </div>
             <div class="mb-4">
-              <TextInput id="kogumik" v-model="request.kogumik" placeholder="Kogumik" />
+              <TagInput id="kogumik" v-model="request.kogumikud" placeholder="Kogumik" :allowableValues="kogumikud" />
             </div>
             <div class="mb-4">
               <SelectInput label="Helistik" class="mb-2 w-fit" v-model="request.helistik" required
@@ -57,8 +57,10 @@
                       class="block w-full sm:text-sm rounded-md dark:text-white dark:bg-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 dark:file:bg-violet-900 file:text-violet-700 dark:file:text-violet-200 hover:file:bg-violet-100 dark:hover:file:bg-violet-800 text-slate-500 dark:text-slate-400"
                       placeholder="ChordPro" aria-invalid="false" aria-describedby="chordPro-error">
                   </div>
-                  <p v-if="request.chordPro" class="mt-1 text-sm text-gray-500 dark:text-gray-300">{{
-                    request.chordPro.substring(0, 50) + '...' }}</p>
+                  <p v-if="request.chordPro" class="mt-1 text-sm text-gray-500 dark:text-gray-300">
+                    {{
+                      request.chordPro.substring(0, 50) + '...' }}
+                  </p>
                 </div>
               </div>
             </div>
@@ -74,8 +76,10 @@
                       class="block w-full sm:text-sm rounded-md dark:text-white dark:bg-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 dark:file:bg-violet-900 file:text-violet-700 dark:file:text-violet-200 hover:file:bg-violet-100 dark:hover:file:bg-violet-800 text-slate-500 dark:text-slate-400"
                       placeholder="MusicXML" aria-invalid="false" aria-describedby="musicXml-error">
                   </div>
-                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-300" v-if="request.musicXml">{{
-                    request.musicXml.substring(0, 50) + '...' }}</p>
+                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-300" v-if="request.musicXml">
+                    {{
+                      request.musicXml.substring(0, 50) + '...' }}
+                  </p>
                 </div>
               </div>
             </div>
@@ -114,7 +118,7 @@ const emit = defineEmits<{
   (e: "done", cancelled: boolean): void
 }>()
 
-const visibleFields = "nimi,sonad,viis,kogumik,helistik,chordPro,musicXml"
+const visibleFields = "nimi,sonad,viis,kogumikud,helistik,chordPro,musicXml"
 
 const kogumikud = ref<string[]>()
 
@@ -149,18 +153,26 @@ const selectableKeys = computed(() => {
 const request = ref(new UpdateLaul())
 
 async function submit() {
-  if (request.value.kogumik && !kogumikud.value?.includes(request.value.kogumik)) {
-    const kogApi = await client.api(new CreateKogumik({ nimi: request.value.kogumik }))
-    if (!kogApi.succeeded) {
-      alert("uue kogumiku lisamine ebaõnnestus")
-      return;
-    }
-  }
+  const failed = await addMissingKogumikud()
+  if (failed) return
 
   const api = await client.api(request.value)
   if (api.succeeded) {
     emit("done", false)
   }
+}
+
+async function addMissingKogumikud() {
+  for (const kogumik of request.value.kogumikud) {
+    if (!kogumikud.value?.includes(kogumik)) {
+      const kogApi = await client.api(new CreateKogumik({ nimi: kogumik }))
+      if (!kogApi.succeeded) {
+        alert("uue kogumiku lisamine ebaõnnestus")
+        return true
+      }
+    }
+  }
+  return false
 }
 
 onMounted(async () => {
@@ -173,15 +185,15 @@ onMounted(async () => {
   request.value.nimi = props.laul.nimi
   request.value.sonad = props.laul.sonad
   request.value.viis = props.laul.viis
-  request.value.kogumik = props.laul.kogumik
+  request.value.kogumikud = props.laul.kogumikud
   request.value.helistik = props.laul.helistik
   request.value.chordPro = props.laul.chordPro
   request.value.musicXml = props.laul.musicXml
 })
 
-const filteredKogumikud = computed(() => {
-  return kogumikud.value?.filter(k => k.toLocaleLowerCase().includes(request.value.kogumik?.toLocaleLowerCase() || ''))
-})
+// const filteredKogumikud = computed(() => {
+//     return kogumikud.value?.filter(k => k.toLocaleLowerCase().includes(request.value.kogumikud?.toLocaleLowerCase() || ''))
+// })
 
 const readUploadedFileAsText = (inputFile: File): Promise<string> => {
   const temporaryFileReader = new FileReader()
@@ -202,7 +214,7 @@ const cancel = () => {
 }
 
 const onDelete = async () => {
-  const api = await client.apiVoid(new DeleteLaul({ id: props.laul.id}))
+  const api = await client.apiVoid(new DeleteLaul({ id: props.laul.id }))
   if (api.succeeded) {
     router.push("/laulud")
   }

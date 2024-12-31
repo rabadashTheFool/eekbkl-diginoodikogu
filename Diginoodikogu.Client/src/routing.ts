@@ -15,7 +15,7 @@ const routes:RouteGuard[] = [
     { path:'/admin',   attr: 'role:Admin' },
     { path:'/laulud',  attr: 'role:Kasutaja' },
     { path:'/uus-laul',    attr: 'role:Sisestaja' },
-    { path:'/laul/:id',    attr: 'role:Kasutaja' },
+    { path:'/laul/',    attr: 'role:Kasutaja' },
 ]
 
 export function configRouter(router:Router)  {
@@ -56,9 +56,8 @@ export function configRouter(router:Router)  {
 }
 
 export function getRedirect(router:Router) {
-    let { redirect } = router.currentRoute?.value.query
-    let ret = redirect && Array.isArray(redirect)
-        ? redirect[0]
-        : redirect
+    const ret = router.currentRoute?.value.query?.redirect && Array.isArray(router.currentRoute?.value.query?.redirect)
+        ? router.currentRoute?.value.query?.redirect[0]
+        : null;
     return ret?.toString()
 }
