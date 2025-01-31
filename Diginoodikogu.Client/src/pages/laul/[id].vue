@@ -18,6 +18,12 @@
           <label class="my-auto">Helistik</label>
           <SelectInput class="w-fit" v-model="currentKey" @change="setKey" required :values="selectableKeys" />
           <SecondaryButton class="mt-1" @click="restoreOrigKey">Taasta alghelistik</SecondaryButton>
+          <SecondaryButton v-if="showMusicXml" class="mt-1" @click="zoomIn">
+            <Iconify icon="mdi:magnify-plus-outline" class="w-6 h-6" />
+          </SecondaryButton>
+          <SecondaryButton v-if="showMusicXml" class="mt-1" @click="zoomOut">
+            <Iconify icon="mdi:magnify-minus-outline" class="w-6 h-6" />
+          </SecondaryButton>
           <SecondaryButton v-if="!showMusicXml && musicXml" class="mt-1" @click="showMusicXml = true">Noot
           </SecondaryButton>
           <SecondaryButton v-if="showMusicXml && chordProSong" class="mt-1" @click="showMusicXml = false">Akordid
@@ -27,7 +33,7 @@
           <select
             class="mt-1 w-fit block pl-3 pr-10 py-2 text-base focus:outline-none sm:text-sm rounded-md dark:text-white dark:bg-gray-900 dark:border-gray-600 border-gray-300 text-gray-900 focus:ring-indigo-500 focus:border-indigo-500"
             @change="selectedVarChanged" v-model="selectedVar">
-            <option :value="undefined">Näita algset</option>
+            <option :value="undefined">Esimene</option>
             <option v-for="v in variatsioonid" :key="v!.id" :value="v">{{ v!.nimetus }}</option>
           </select>
         </div>
@@ -63,12 +69,24 @@ const id = computed(() => (route.params as any)?.id)
 const client = useClient()
 const api = ref(new ApiResult())
 
-const { hasRole } = useAuth()
-const canEdit = computed(() => hasRole('Sisestaja'))
+const { hasRole, isAdmin, user } = useAuth()
+const canEdit = computed(() => isAdmin() || hasRole('Sisestaja') && isCreatedByCurrentUser())
 const isEditMode = ref(false)
 const showAddVar = ref(false)
 const showEditVar = ref(false)
 const showModal = ref(false)
+
+/**
+ * Returns true if the current user created the song or the selected variation,
+ * false otherwise.
+ */
+const isCreatedByCurrentUser = () => {
+  if (selectedVar.value) {
+    return user.value?.userId === selectedVar.value.createdBy
+  } else {
+    return user.value?.userId === laul.value?.createdBy
+  }
+}
 
 const startLaulEdit = () => {
   isEditMode.value = true
@@ -149,7 +167,7 @@ const mutationCallback = (mutationsList: MutationRecord[]): void => {
       mutation.type === "attributes" &&
       mutation.attributeName === "class"
     ) {
-      const currentDarkModeState = mutation.target.classList.contains('dark')
+      const currentDarkModeState = (mutation.target as Element).classList.contains('dark')
       if (darkMode !== currentDarkModeState) {
         darkMode = currentDarkModeState
         toggleOsmdDarkMode()
@@ -162,7 +180,7 @@ const mutationCallback = (mutationsList: MutationRecord[]): void => {
 onMounted(async () => {
   darkMode = document.documentElement.classList.contains('dark')
   darkModeObserver = new MutationObserver(mutationCallback)
-  darkModeObserver.observe(document.documentElement, {attributes: true})
+  darkModeObserver.observe(document.documentElement, { attributes: true })
   await refresh()
 })
 
@@ -246,17 +264,6 @@ const setKey = async () => {
 
   if (chordProSong.value) {
     chordProSong.value = chordProSong.value.changeKey(currentKey.value)
-    // const transposeDistance = chordProSong.value.getTransposeDistance(currentKey.value)
-    // let transposedSong = chordProSong.value.transpose(transposeDistance, {
-    //   normalizeChordSuffix: true,
-    // })
-    // if (transposedSong.key != currentKey.value) {
-    //   transposedSong = transposedSong.transposeUp().transposeDown()
-    // }
-    // if (transposedSong.key != currentKey.value) {
-    //   transposedSong = transposedSong.transposeDown().transposeUp()
-    // }
-    // chordProSong.value = transposedSong
   }
 }
 
@@ -287,5 +294,19 @@ const osmdOptions = {
   drawTitle: false,
   darkMode: false,
   pageBackgroundColor: "#12345600",
+}
+
+const zoomIn = () => {
+  if (osmd) {
+    osmd.Zoom = osmd.Zoom * 1.2
+    osmd.render()
+  }
+}
+
+const zoomOut = () => {
+  if (osmd) {
+    osmd.Zoom = osmd.Zoom / 1.2
+    osmd.render()
+  }
 }
 </script>

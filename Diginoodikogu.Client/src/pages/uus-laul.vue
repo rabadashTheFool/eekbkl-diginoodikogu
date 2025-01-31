@@ -153,6 +153,7 @@ async function addNewLaul() {
 }
 
 async function addMissingKogumikud() {
+  if (!request.value.kogumikud) return
   for (const kogumik of request.value.kogumikud) {
     if (!kogumikud.value?.includes(kogumik)) {
       const kogApi = await client.api(new CreateKogumik({ nimi: kogumik }))
