@@ -9,6 +9,7 @@
     </div>
     <div>
       <div v-if="api.response">
+        <h1 class="font-bold text-3xl mx-auto mb-4 w-fit">{{ laul?.nimi }}</h1>
         <div v-if="canEdit" class="flex gap-2 mb-2" style="max-width: 21cm;">
           <SecondaryButton v-if="!selectedVar" @click="startLaulEdit">Muuda laulu</SecondaryButton>
           <SecondaryButton v-if="selectedVar" @click="startEditVariatsioon">Muuda variatsiooni</SecondaryButton>
@@ -28,6 +29,9 @@
           </SecondaryButton>
           <SecondaryButton v-if="showMusicXml && chordProSong" class="mt-1" @click="showMusicXml = false">Akordid
           </SecondaryButton>
+          <SecondaryButton @click="createPdf" class="mt-1">
+            <Iconify icon="mdi:printer" class="w-6 h-6" />
+          </SecondaryButton>
         </div>
         <div v-if="variatsioonid && variatsioonid.length" class="mb-4">
           <select
@@ -37,7 +41,6 @@
             <option v-for="v in variatsioonid" :key="v!.id" :value="v">{{ v!.nimetus }}</option>
           </select>
         </div>
-        <h1 class="font-bold text-3xl mx-auto w-fit">{{ laul?.nimi }}</h1>
         <div>
           <div v-show="!showMusicXml" v-html="chordProHtml"></div>
           <div v-show="showMusicXml" ref="osmdRef"></div>
@@ -55,12 +58,14 @@ import { ApiResult } from "@servicestack/client"
 import { useClient, useAuth } from "@servicestack/vue"
 import { QueryLaulud, QueryResponse, QueryVariatsioonid, Variatsioon } from "@/dtos"
 import { ChordProParser, Key, HtmlDivFormatter } from 'chordsheetjs'
-import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay'
+import { OpenSheetMusicDisplay, SvgVexFlowBackend, type IOSMDOptions } from 'opensheetmusicdisplay'
 import { Laul } from '@/dtos'
 import { useRoute, useRouter } from 'vue-router'
 import { MAJOR_KEYS, MINOR_KEYS, TRANSPOSE_KEY_VALUE } from "@/keys"
 import { ExtendedTransposeCalculator } from '@/ExtendedTransposeCalculator'
 import type { ETCDirections } from '@/ETC'
+import { jsPDF } from 'jspdf'
+import 'svg2pdf.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -274,6 +279,7 @@ const renderMusicXml = async () => {
   if (!osmd) {
     osmdOptions.darkMode = darkMode
     osmd = new OpenSheetMusicDisplay(osmdRef.value, osmdOptions)
+    osmd.EngravingRules.DefaultVexFlowNoteFont = 'Bravura'
   }
   osmd.clear()
 
@@ -289,11 +295,11 @@ const renderMusicXml = async () => {
   osmd.render()
 }
 
-const osmdOptions = {
+const osmdOptions: IOSMDOptions = {
   backend: "svg",
-  drawTitle: false,
+  drawTitle: true,
   darkMode: false,
-  pageBackgroundColor: "#12345600",
+  pageBackgroundColor: "#00000000",
 }
 
 const zoomIn = () => {
@@ -307,6 +313,68 @@ const zoomOut = () => {
   if (osmd) {
     osmd.Zoom = osmd.Zoom / 1.2
     osmd.render()
+  }
+}
+
+let pdfIframe: HTMLIFrameElement | null = null
+
+/**
+     * Creates a Pdf of the currently rendered MusicXML
+     * @param pdfName if no name is given, the composer and title of the piece will be used
+     */
+async function createPdf() {
+  if (!osmd) return
+
+  const backends = osmd.Drawer.Backends;
+  let svgElement = (backends[0] as SvgVexFlowBackend).getSvgElement()
+
+  let pageWidth = 210;
+  let pageHeight = 297;
+  const engravingRulesPageFormat = osmd.EngravingRules.PageFormat
+  if (engravingRulesPageFormat && !engravingRulesPageFormat.IsUndefined) {
+    pageWidth = engravingRulesPageFormat.width
+    pageHeight = engravingRulesPageFormat.height
+  } else {
+    pageHeight = pageWidth * svgElement.clientHeight / svgElement.clientWidth
+  }
+
+  const orientation = pageHeight > pageWidth ? "p" : "l"
+  // create a new jsPDF instance
+  const pdf = new jsPDF({
+    orientation: orientation,
+    unit: "mm",
+    format: [pageWidth, pageHeight]
+  });
+  //const scale = pageWidth / svgElement.clientWidth;
+  for (let idx = 0, len = backends.length; idx < len; ++idx) {
+    if (idx > 0) {
+      pdf.addPage()
+    }
+    svgElement = (backends[idx] as SvgVexFlowBackend).getSvgElement()
+
+    if (!pdf.svg) {
+      console.log("svg2pdf missing, necessary for jspdf.svg().")
+      return;
+    }
+    await pdf.svg(svgElement, {
+      x: 0,
+      y: 0,
+      width: pageWidth,
+      height: pageHeight,
+    })
+  }
+
+  if (pdfIframe) {
+    document.body.removeChild(pdfIframe)
+    pdfIframe = null
+  }
+
+  pdfIframe = document.createElement('iframe')
+  pdfIframe.style.display = 'none';
+  document.body.appendChild(pdfIframe);
+  pdfIframe.src = pdf.output('bloburl').toString()
+  pdfIframe.onload = function () {
+    pdfIframe!.contentWindow!.print()
   }
 }
 </script>

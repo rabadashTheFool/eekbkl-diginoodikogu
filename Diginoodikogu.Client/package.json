@@ -22,8 +22,10 @@
     "@unhead/vue": "^1.10.4",
     "@vueuse/core": "^11.0.3",
     "chordsheetjs": "^10.11.0",
+    "jspdf": "^2.5.2",
     "opensheetmusicdisplay": "^1.8.9",
     "pinia": "^2.2.2",
+    "svg2pdf.js": "^2.2.4",
     "vue": "^3.5.0",
     "vue-router": "^4.4.3"
   },
