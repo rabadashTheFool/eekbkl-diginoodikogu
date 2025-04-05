@@ -31,5 +31,5 @@ public class AppHost() : AppHostBase("Diginoodikogu"), IHostingStartup
     
     // TODO: Replace with your own License Key. FREE Individual or OSS License available from: https://servicestack.net/free
     public static void RegisterKey() =>
-        Licensing.RegisterLicense("OSS BSD-3-Clause 2024 https://github.com/NetCoreTemplates/vue-spa TT76agO8eEwZcyhauXTD7a/9eK2g/Ote0yQU3o0bMXR4T6I3k4R/sr1TAvUkbeTG+1t/qJQKjlUKe58L7bBdjUx3UfRuboyjP6LO38RFlKfNMhjzkwsklWWfnRIQxguX6bf1yD7iQumkgRoW9VoqKEhNppvl518+UnFJ4PVwQRw=");    
+        Licensing.RegisterLicense("OSS Apache-2.0 2025 https://github.com/rabadashTheFool/eekbkl-diginoodikogu Xzf6Xu3WHK1W7SIjBIocoWH6GZtX57fzWf5XBIOsBHJqySAst27pvJmti2hYPyrYFb/AbWxa8PoEvbpNfN6mUzrBNF0guAuhQ7ZBcclOKs62Ggi9lS0jvCdathYq6L7BaHugEQzE4PjvA2wD9wv18b515kuJ1V7J8YCF7+Nl6TQ=");    
 }
